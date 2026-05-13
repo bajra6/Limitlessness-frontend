@@ -9,12 +9,10 @@ export default function TodoCommand({ todos, setTodos }) {
 
   const handleAddTask = () => {
     if (newTask.trim() && newDueDate.trim()) {
-      const today = new Date();
-      const setdate = formatDate(today);
       const updated = { ...todos };
       updated.pending = [
         ...updated.pending,
-        { task: newTask, setdate, duedate: newDueDate }
+        { task: newTask, dueDate: newDueDate, isCompleted: false }
       ];
       setTodos(updated);
       setNewTask('');
@@ -41,8 +39,8 @@ export default function TodoCommand({ todos, setTodos }) {
 
   // Sort pending tasks by due date (ascending)
   const sortedPending = [...todos.pending].sort((a, b) => {
-    const dateA = new Date(a.duedate.split('-').reverse().join('-'));
-    const dateB = new Date(b.duedate.split('-').reverse().join('-'));
+    const dateA = new Date(a.dueDate.split('-').reverse().join('-'));
+    const dateB = new Date(b.dueDate.split('-').reverse().join('-'));
     return dateA - dateB;
   });
 
@@ -64,12 +62,12 @@ export default function TodoCommand({ todos, setTodos }) {
               >
                 <p className="text-sm text-white mb-1">{task.task}</p>
                 <p className="mono-text text-xs text-zinc-500">
-                  Due: {task.duedate}
+                  Due: {task.dueDate}
                 </p>
                 <div className="flex gap-2 mt-2">
                   <button
                     onClick={() => {
-                      const actualIndex = todos.pending.findIndex(t => t.task === task.task && t.duedate === task.duedate);
+                      const actualIndex = todos.pending.findIndex(t => t.task === task.task && t.dueDate === task.dueDate);
                       handleCompleteTask(actualIndex);
                     }}
                     className="flex-1 text-xs bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-500/30 text-indigo-300 py-1 rounded transition flex items-center justify-center gap-1"
@@ -78,7 +76,7 @@ export default function TodoCommand({ todos, setTodos }) {
                   </button>
                   <button
                     onClick={() => {
-                      const actualIndex = todos.pending.findIndex(t => t.task === task.task && t.duedate === task.duedate);
+                      const actualIndex = todos.pending.findIndex(t => t.task === task.task && t.dueDate === task.dueDate);
                       handleDeleteTask(actualIndex);
                     }}
                     className="px-2 text-xs bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 text-red-300 py-1 rounded transition"

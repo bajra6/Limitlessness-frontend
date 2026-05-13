@@ -1,7 +1,7 @@
 import React from 'react';
 import { Trophy } from 'lucide-react';
 
-export default function AchievementsLog({ achievements, onOpen }) {
+export default function AchievementsLog({ achievementsCount, onOpen }) {
   return (
     <div
       onClick={onOpen}
@@ -13,7 +13,7 @@ export default function AchievementsLog({ achievements, onOpen }) {
       </div>
       <div className="text-right">
         <p className="mono-text text-3xl font-bold text-yellow-400">
-          {achievements.length}
+          {achievementsCount}
         </p>
         <p className="text-xs text-zinc-400 mt-1">total</p>
       </div>

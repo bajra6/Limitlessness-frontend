@@ -1,9 +1,7 @@
 import React from 'react';
 import { FileText } from 'lucide-react';
 
-export default function RawNotes({ notes, onOpen }) {
-  const noteCount = Object.keys(notes).length;
-
+export default function RawNotes({ notesCount, onOpen }) {
   return (
     <div
       onClick={onOpen}
@@ -15,7 +13,7 @@ export default function RawNotes({ notes, onOpen }) {
       </div>
       <div className="text-right">
         <p className="mono-text text-3xl font-bold text-blue-400">
-          {noteCount}
+          {notesCount}
         </p>
       </div>
     </div>

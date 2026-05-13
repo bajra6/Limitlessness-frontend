@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, CheckCircle2, Circle } from 'lucide-react';
 
 export default function LifeArchitecture({ lifeGoals, setLifeGoals, onOpen }) {
   const [expandedGoal, setExpandedGoal] = useState(Object.keys(lifeGoals)[0]);
@@ -8,11 +7,11 @@ export default function LifeArchitecture({ lifeGoals, setLifeGoals, onOpen }) {
     const updated = { ...lifeGoals };
     const goal = updated[goalId];
     const step = goal.steps[stepIndex];
-    step.completed = !step.completed;
+    step.isCompleted = !step.isCompleted;
 
     // Recalculate progress
-    const completedSteps = goal.steps.filter(s => s.completed).length;
-    goal.progress = (completedSteps / goal.steps.length) * 100;
+    const completedSteps = goal.steps.filter(s => s.isCompleted).length;
+    goal.progress = goal.steps.length > 0 ? (completedSteps / goal.steps.length) * 100 : 0;
 
     setLifeGoals(updated);
   };
@@ -24,7 +23,7 @@ export default function LifeArchitecture({ lifeGoals, setLifeGoals, onOpen }) {
       <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar">
         {Object.entries(lifeGoals).map(([goalId, goal]) => (
           <div key={goalId} className="bg-zinc-900/50 hover:bg-zinc-900/70 p-4 rounded-lg transition">
-            <p className="font-medium text-white mb-2">{goal.goal}</p>
+            <p className="font-medium text-white mb-2">{goal.goalName}</p>
             <div className="w-full bg-zinc-800 rounded-full h-2">
               <div
                 className="bg-indigo-500 h-full rounded-full transition-all"
