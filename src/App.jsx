@@ -25,6 +25,9 @@ export default function App() {
   // Total Score State
   const [totalScore, setTotalScore] = useState(0);
 
+  // User Birthdate (for Age Matrix)
+  const [birthDate, setBirthDate] = useState('2000-00-00T00:00:00'); 
+
   // Routine State - list of routines from backend
   const [routine, setRoutine] = useState([]);
 
@@ -76,6 +79,8 @@ export default function App() {
 
         // Update todos
         setTodos(data.todos);
+
+        setBirthDate(data?.user?.dob || '2000-00-00T00:00:00');
 
         // Update achievements count (if needed - currently just a count)
         setAchievements(data.achievements || []);
@@ -135,7 +140,7 @@ export default function App() {
         {/* Row 1 */}
         {/* Tile 1: Age Matrix */}
         <div className="overflow-hidden">
-          <AgeMatrix />
+          <AgeMatrix birthDate={birthDate} />
         </div>
 
         {/* Tile 2: Daily Routine */}

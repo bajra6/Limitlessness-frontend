@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { formatTime, formatDate, calculateAgeStats } from '../utils';
 
-export default function AgeMatrix() {
-  const birthDate = "2002-05-15T00:00:00";
+export default function AgeMatrix({birthDate}) {
   const [time, setTime] = useState(new Date());
   const [stats, setStats] = useState(calculateAgeStats(birthDate));
 
