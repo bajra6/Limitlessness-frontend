@@ -148,7 +148,10 @@ export default function App() {
         <>
           {/* Header - Limitlessness + Score */}
           <div className="mb-4 flex-shrink-0 flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-white">Limitlessness</h1>
+            <div className="flex items-center gap-3">
+              <img src="/favicon.png" alt="Limitlessness" className="w-8 h-8 rounded-md object-cover" />
+              <h1 className="text-2xl font-bold text-white">Limitlessness</h1>
+            </div>
             <p className="mono-text text-sm text-indigo-400">
               Score: <span className="font-bold">{totalScore}</span>
             </p>
