@@ -1,48 +1,160 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Plus, CheckCircle2, Circle } from 'lucide-react';
 
-export default function LifeArchitectureModal({ isOpen, onClose, lifeGoals, setLifeGoals }) {
-  const [selectedPathway, setSelectedPathway] = useState(Object.keys(lifeGoals)[0] || null);
+export default function LifeArchitectureModal({ isOpen, onClose, lifeGoals, setLifeGoals, userId }) {
+  const [journeys, setJourneys] = useState([]);
+  const [selectedJourneyId, setSelectedJourneyId] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newSteps, setNewSteps] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleAddPathway = () => {
-    if (!newTitle.trim() || !newSteps.trim()) return;
+  const syncLifeGoals = (journeysList) => {
+    const updatedGoals = {};
+    journeysList.forEach(journey => {
+      updatedGoals[journey._id] = {
+        goalName: journey.goalName,
+        progress: journey.progress,
+        steps: journey.steps.map(step => ({
+          text: step.text,
+          isCompleted: step.isCompleted
+        }))
+      };
+    });
+    setLifeGoals(updatedGoals);
+  };
 
-    const steps = newSteps.split('\n').filter(step => step.trim()).map(step => ({
-      stepname: step.trim(),
-      completed: false
-    }));
+  useEffect(() => {
+    if (!isOpen) {
+      setJourneys([]);
+      setSelectedJourneyId(null);
+      setError('');
+      setIsLoading(false);
+      return;
+    }
 
-    const newGoalId = `goal_${Date.now()}`;
-    const updatedGoals = {
-      ...lifeGoals,
-      [newGoalId]: {
-        goal: newTitle.trim(),
-        progress: 0,
-        steps
+    const fetchJourneys = async () => {
+      setError('');
+      setIsLoading(true);
+      try {
+        const response = await fetch(`http://localhost:5000/api/journeys?userId=${userId}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch journeys');
+        }
+
+        const data = await response.json();
+        const fetchedJourneys = data.journeys || [];
+        setJourneys(fetchedJourneys);
+        syncLifeGoals(fetchedJourneys);
+
+        if (fetchedJourneys.length > 0) {
+          setSelectedJourneyId(fetchedJourneys[0]._id);
+        } else if (Object.keys(lifeGoals).length > 0) {
+          const initialJourneyId = Object.keys(lifeGoals)[0];
+          setSelectedJourneyId(initialJourneyId);
+          setJourneys(Object.entries(lifeGoals).map(([goalId, goal]) => ({
+            _id: goalId,
+            goalName: goal.goalName || goal.goal,
+            progress: goal.progress || 0,
+            steps: goal.steps || []
+          })));
+        }
+      } catch (fetchError) {
+        console.error('Failed to load journeys:', fetchError);
+        setError('Unable to load journeys. Please try again.');
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    setLifeGoals(updatedGoals);
-    setNewTitle('');
-    setNewSteps('');
-    setIsAdding(false);
-    setSelectedPathway(newGoalId);
+    fetchJourneys();
+  }, [isOpen, userId]);
+
+  const createJourney = async (goalName, steps) => {
+    const response = await fetch('http://localhost:5000/api/journeys', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ userId, goalName, steps })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to create journey');
+    }
+
+    return data.journey;
   };
 
-  const handleToggleStep = (goalId, stepIndex) => {
-    const updated = { ...lifeGoals };
-    const goal = updated[goalId];
-    const step = goal.steps[stepIndex];
-    step.completed = !step.completed;
+  const handleAddPathway = async () => {
+    if (!newTitle.trim() || !newSteps.trim()) return;
 
-    const completedSteps = goal.steps.filter(s => s.completed).length;
-    goal.progress = (completedSteps / goal.steps.length) * 100;
+    const steps = newSteps
+      .split('\n')
+      .filter(step => step.trim())
+      .map(step => ({
+        text: step.trim(),
+        isCompleted: false
+      }));
 
-    setLifeGoals(updated);
+    try {
+      setIsLoading(true);
+      const newJourney = await createJourney(newTitle.trim(), steps);
+      const updatedJourneys = [...journeys, newJourney];
+      setJourneys(updatedJourneys);
+      syncLifeGoals(updatedJourneys);
+      setNewTitle('');
+      setNewSteps('');
+      setIsAdding(false);
+      setSelectedJourneyId(newJourney._id);
+    } catch (submitError) {
+      console.error('Could not create journey:', submitError);
+      setError('Unable to create pathway. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const updateJourneyStep = async (journeyId, stepIndex, isCompleted) => {
+    const response = await fetch('http://localhost:5000/api/journeys', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ journeyId, stepIndex, isCompleted })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to update step');
+    }
+
+    return data.journey;
+  };
+
+  const handleToggleStep = async (journeyId, stepIndex) => {
+    const journey = journeys.find(journeyItem => journeyItem._id === journeyId);
+    if (!journey) return;
+
+    try {
+      setIsLoading(true);
+      const updatedJourney = await updateJourneyStep(journeyId, stepIndex, !journey.steps[stepIndex]?.isCompleted);
+      const updatedJourneys = journeys.map(item =>
+        item._id === journeyId ? updatedJourney : item
+      );
+      setJourneys(updatedJourneys);
+      syncLifeGoals(updatedJourneys);
+    } catch (updateError) {
+      console.error('Could not update journey step:', updateError);
+      setError('Unable to update step. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const selectedJourney = journeys.find(journey => journey._id === selectedJourneyId);
 
   if (!isOpen) return null;
 
@@ -77,12 +189,12 @@ export default function LifeArchitectureModal({ isOpen, onClose, lifeGoals, setL
                     placeholder="Enter pathway title..."
                   />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-h-[220px]">
                   <label className="block text-sm font-medium text-zinc-300 mb-2">Steps (one per line)</label>
                   <textarea
                     value={newSteps}
                     onChange={(e) => setNewSteps(e.target.value)}
-                    className="w-full h-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-indigo-500 focus:outline-none resize-none"
+                    className="w-full h-60 overflow-y-auto custom-scrollbar bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-indigo-500 focus:outline-none resize-none"
                     placeholder="Enter each step on a new line..."
                   />
                 </div>
@@ -117,26 +229,37 @@ export default function LifeArchitectureModal({ isOpen, onClose, lifeGoals, setL
                   </button>
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
-                  {Object.entries(lifeGoals).map(([goalId, goal]) => (
-                    <div
-                      key={goalId}
-                      onClick={() => setSelectedPathway(goalId)}
-                      className={`p-4 rounded-lg border transition cursor-pointer ${
-                        selectedPathway === goalId
-                          ? 'bg-indigo-950/30 border-indigo-500/40'
-                          : 'bg-zinc-900/50 border-white/5 hover:border-white/10'
-                      }`}
-                    >
-                      <p className="font-medium text-white mb-2">{goal.goal}</p>
-                      <div className="w-full bg-zinc-800 rounded-full h-2">
-                        <div
-                          className="bg-indigo-500 h-full rounded-full transition-all"
-                          style={{ width: `${goal.progress}%` }}
-                        />
-                      </div>
-                      <p className="mono-text text-xs text-zinc-400 mt-1">{goal.progress.toFixed(0)}%</p>
+                  {error && (
+                    <div className="p-3 rounded-lg bg-red-900/40 border border-red-500 text-red-200 text-sm">
+                      {error}
                     </div>
-                  ))}
+                  )}
+                  {isLoading ? (
+                    <div className="text-zinc-400 text-sm">Loading journeys...</div>
+                  ) : journeys.length > 0 ? (
+                    journeys.map(journey => (
+                      <div
+                        key={journey._id}
+                        onClick={() => setSelectedJourneyId(journey._id)}
+                        className={`p-4 rounded-lg border transition cursor-pointer ${
+                          selectedJourneyId === journey._id
+                            ? 'bg-indigo-950/30 border-indigo-500/40'
+                            : 'bg-zinc-900/50 border-white/5 hover:border-white/10'
+                        }`}
+                      >
+                        <p className="font-medium text-white mb-2">{journey.goalName}</p>
+                        <div className="w-full bg-zinc-800 rounded-full h-2">
+                          <div
+                            className="bg-indigo-500 h-full rounded-full transition-all"
+                            style={{ width: `${journey.progress}%` }}
+                          />
+                        </div>
+                        <p className="mono-text text-xs text-zinc-400 mt-1">{journey.progress.toFixed(0)}%</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-zinc-400 text-sm">No journeys available.</p>
+                  )}
                 </div>
               </div>
 
@@ -144,30 +267,32 @@ export default function LifeArchitectureModal({ isOpen, onClose, lifeGoals, setL
               <div className="w-[65%] flex flex-col">
                 <div className="p-4 border-b border-white/10">
                   <h3 className="text-lg font-semibold text-white">
-                    {selectedPathway ? lifeGoals[selectedPathway].goal : 'Select a Pathway'}
+                    {selectedJourney ? selectedJourney.goalName : 'Select a Journey'}
                   </h3>
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
-                  {selectedPathway && lifeGoals[selectedPathway] ? (
+                  {isLoading ? (
+                    <p className="text-zinc-400">Loading journey details...</p>
+                  ) : selectedJourney ? (
                     <div className="space-y-3">
-                      {lifeGoals[selectedPathway].steps.map((step, idx) => (
+                      {selectedJourney.steps.map((step, idx) => (
                         <div
                           key={idx}
-                          onClick={() => handleToggleStep(selectedPathway, idx)}
+                          onClick={() => handleToggleStep(selectedJourney._id, idx)}
                           className={`p-3 rounded-lg border transition cursor-pointer ${
-                            step.completed
+                            step.isCompleted
                               ? 'bg-indigo-950/30 border-indigo-500/40'
                               : 'bg-zinc-900/50 border-white/5 hover:border-white/10'
                           }`}
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <p className={`text-sm ${step.completed ? 'text-indigo-300 line-through' : 'text-white'}`}>
-                                {step.stepname}
+                              <p className={`text-sm ${step.isCompleted ? 'text-indigo-300 line-through' : 'text-white'}`}>
+                                {step.text}
                               </p>
                             </div>
                             <div>
-                              {step.completed ? (
+                              {step.isCompleted ? (
                                 <CheckCircle2 size={18} className="text-indigo-400" />
                               ) : (
                                 <Circle size={18} className="text-zinc-600" />

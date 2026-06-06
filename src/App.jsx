@@ -227,6 +227,7 @@ export default function App() {
         onClose={() => setIsLifeArchitectureModalOpen(false)}
         lifeGoals={lifeGoals}
         setLifeGoals={setLifeGoals}
+        userId={userId}
       />
         </>
       )}
