@@ -1,23 +1,25 @@
 import React from 'react';
 import { CheckCircle2, Circle, Info } from 'lucide-react';
 
-export default function DailyRoutineEngine({ routine, setRoutine, totalScore, setTotalScore, currentDate, onOpenModal }) {
+export default function DailyRoutineEngine({ routine, setRoutine, totalScore, currentDate, userId, onOpenModal, onToggleRoutine }) {
   const todayRoutine = Array.isArray(routine) ? routine : [];
 
-  const handleToggleHabit = (habitId) => {
-    const updated = routine.map((habit) => {
-      if (habit._id !== habitId) return habit;
+  const handleToggleHabit = async (habitId) => {
+    const habit = routine.find((item) => item._id === habitId);
+    if (!habit) return;
+
+    if (onToggleRoutine) {
+      await onToggleRoutine(habit);
+      return;
+    }
+
+    const updated = routine.map((item) => {
+      if (item._id !== habitId) return item;
       return {
-        ...habit,
-        isCompleted: !habit.isCompleted
+        ...item,
+        isCompleted: !item.isCompleted
       };
     });
-
-    const toggledHabit = routine.find((habit) => habit._id === habitId);
-    if (toggledHabit) {
-      const pointChange = toggledHabit.isCompleted ? -toggledHabit.targetScore : toggledHabit.targetScore;
-      setTotalScore(totalScore + pointChange);
-    }
 
     setRoutine(updated);
   };

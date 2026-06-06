@@ -67,6 +67,9 @@ export default function App() {
         setAchievements(data.achievements || []);
         setAchievementCount(data.achievementCount || 0);
 
+        // Update dashboard score from historical completed routines
+        setTotalScore(data.totalScore || 0);
+
         // Update notes
         setNotes(data.notes || {});
         setNotesCount(data.noteCount || 0);
@@ -93,6 +96,34 @@ export default function App() {
         console.error('Failed to fetch dashboard data:', error);
         setLoading(false);
       }
+  };
+
+  const handleToggleRoutine = async (habit) => {
+    if (!habit || !habit._id) return;
+
+    const updatedCompletion = !habit.isCompleted;
+    try {
+      const response = await fetch('http://localhost:5000/api/routine-logs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userId,
+          routineId: habit._id,
+          date: currentDate,
+          isCompleted: updatedCompletion
+        })
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update routine log');
+      }
+      const data = await response.json();
+      setTotalScore(data.totalScore || 0);
+      await fetchDashboardData();
+    } catch (err) {
+      console.error('Routine toggle failed', err);
+    }
   };
 
   // Fetch dashboard data on mount
@@ -137,9 +168,10 @@ export default function App() {
             routine={routine}
             setRoutine={setRoutine}
             totalScore={totalScore}
-            setTotalScore={setTotalScore}
             currentDate={currentDate}
+            userId={userId}
             onOpenModal={() => setIsRoutineModalOpen(true)}
+            onToggleRoutine={handleToggleRoutine}
           />
         </div>
 
@@ -207,8 +239,9 @@ export default function App() {
         isOpen={isRoutineModalOpen}
         onClose={() => setIsRoutineModalOpen(false)}
         routine={routine}
-        setRoutine={setRoutine}
+        userId={userId}
         currentDate={currentDate}
+        refreshDashboard={fetchDashboardData}
       />
       <LifeArchitectureModal
         isOpen={isLifeArchitectureModalOpen}
