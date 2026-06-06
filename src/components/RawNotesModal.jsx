@@ -1,14 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Plus, ArrowLeft } from 'lucide-react';
 import { formatDateTime, formatDate } from '../utils';
 
-export default function RawNotesModal({ isOpen, onClose, notes, setNotes }) {
+export default function RawNotesModal({ isOpen, onClose, userId }) {
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [selectedNote, setSelectedNote] = useState(null);
+  const [notes, setNotes] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     content: ''
   });
+
+  // Fetch notes on modal open
+  useEffect(() => {
+    if (isOpen) {
+      fetchNotes();
+    }
+  }, [isOpen]);
+
+  const fetchNotes = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const response = await fetch(`http://localhost:5000/api/notes?userId=${userId}`);
+      const data = await response.json();
+      
+      // Transform array format to object format for backward compatibility
+      const notesMap = {};
+      if (Array.isArray(data.notes)) {
+        data.notes.forEach(note => {
+          // Use MongoDB _id as unique key
+          const noteId = note._id;
+          notesMap[noteId] = {
+            title: note.title,
+            content: note.content,
+            date: note.date || formatDate(new Date(note.createdAt)),
+            timestamp: noteId
+          };
+        });
+      }
+      setNotes(notesMap);
+      setLoading(false);
+    } catch (err) {
+      console.error('Failed to fetch notes:', err);
+      setError('Failed to load notes');
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -18,21 +58,36 @@ export default function RawNotesModal({ isOpen, onClose, notes, setNotes }) {
     }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (formData.title.trim() && formData.content.trim()) {
-      const now = new Date();
-      const timestamp = formatDateTime(now);
-      const newNote = {
-        title: formData.title,
-        content: formData.content,
-        date: formatDate(now),
-        timestamp: timestamp
-      };
-      const updated = { ...notes };
-      updated[timestamp] = newNote;
-      setNotes(updated);
-      setFormData({ title: '', content: '' });
-      setIsAddingNote(false);
+      try {
+        setError('');
+        const now = new Date();
+        const response = await fetch('http://localhost:5000/api/notes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            userId,
+            title: formData.title,
+            content: formData.content,
+            date: formatDate(now)
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create note');
+        }
+
+        // Refresh notes list
+        await fetchNotes();
+        setFormData({ title: '', content: '' });
+        setIsAddingNote(false);
+      } catch (err) {
+        console.error('Failed to create note:', err);
+        setError('Failed to create note');
+      }
     }
   };
 
@@ -91,6 +146,7 @@ export default function RawNotesModal({ isOpen, onClose, notes, setNotes }) {
           // View single note
           <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
             <div className="bg-zinc-800/50 p-6 rounded-lg border border-white/10">
+              <h3 className="text-xl font-semibold text-white mb-2">{selectedNote.title}</h3>
               <p className="text-xs text-zinc-500 mb-4">{selectedNote.date}</p>
               <p className="text-white whitespace-pre-wrap leading-relaxed">{selectedNote.content}</p>
             </div>
@@ -199,17 +255,6 @@ export default function RawNotesModal({ isOpen, onClose, notes, setNotes }) {
           </div>
         )}
 
-        {/* Footer - Only shown when not adding note and no note selected */}
-        {!isAddingNote && !selectedNote && (
-          <div className="flex gap-3 p-6 border-t border-white/10 flex-shrink-0">
-            <button
-              onClick={onClose}
-              className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white py-2 rounded-lg text-sm font-medium transition"
-            >
-              Close
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

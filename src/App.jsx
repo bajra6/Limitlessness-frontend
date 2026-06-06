@@ -209,9 +209,11 @@ export default function App() {
       />
       <RawNotesModal
         isOpen={isNotesModalOpen}
-        onClose={() => setIsNotesModalOpen(false)}
-        notes={notes}
-        setNotes={setNotes}
+        onClose={() => {
+          setIsNotesModalOpen(false);
+          fetchDashboardData();
+        }}
+        userId={userId}
       />
       <DailyRoutineModal
         isOpen={isRoutineModalOpen}
