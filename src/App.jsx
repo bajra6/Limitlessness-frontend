@@ -65,14 +65,8 @@ export default function App() {
     }
   });
 
-  // Fetch dashboard data on mount
-  useEffect(() => {
-    // Get today's date in DD-MM-YY format
-    const today = new Date();
-    const todayStr = `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getFullYear()).slice(-2)}`;
-    setCurrentDate(todayStr);
-
-    const fetchDashboardData = async () => {
+  // Fetch dashboard data
+  const fetchDashboardData = async () => {
       try {
         const response = await fetch(`http://localhost:5000/api/dashboard?userId=${userId}`);
         const data = await response.json();
@@ -112,7 +106,14 @@ export default function App() {
         console.error('Failed to fetch dashboard data:', error);
         setLoading(false);
       }
-    };
+  };
+
+  // Fetch dashboard data on mount
+  useEffect(() => {
+    // Get today's date in DD-MM-YY format
+    const today = new Date();
+    const todayStr = `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getFullYear()).slice(-2)}`;
+    setCurrentDate(todayStr);
 
     fetchDashboardData();
   }, [userId]);
@@ -199,10 +200,12 @@ export default function App() {
       {/* Modals */}
       <AchievementsModal
         isOpen={isAchievementsModalOpen}
-        onClose={() => setIsAchievementsModalOpen(false)}
-        achievements={achievements}
-        setAchievements={setAchievements}
+        onClose={() => {
+          setIsAchievementsModalOpen(false);
+          fetchDashboardData();
+        }}
         currentDate={currentDate}
+        userId={userId}
       />
       <RawNotesModal
         isOpen={isNotesModalOpen}

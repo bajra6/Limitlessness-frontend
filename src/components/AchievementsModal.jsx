@@ -1,38 +1,90 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { formatDate } from '../utils';
 
-export default function AchievementsModal({ isOpen, onClose, achievements, setAchievements, currentDate }) {
+export default function AchievementsModal({ isOpen, onClose, currentDate, userId }) {
   const [formData, setFormData] = useState({
-    achievement: '',
-    date: currentDate,
-    domain: '',
-    difficulty: 5
+    title: '',
+    earnedAt: currentDate
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const [achievements, setAchievements] = useState([]);
+
+  // Fetch achievements when modal opens
+  useEffect(() => {
+    if (isOpen && userId) {
+      fetchAchievements();
+    }
+  }, [isOpen, userId]);
+
+  const fetchAchievements = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const response = await fetch(`http://localhost:5000/api/achievements?userId=${userId}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setAchievements(data.achievements);
+      } else {
+        setError('Failed to fetch achievements');
+      }
+    } catch (err) {
+      console.error('Error fetching achievements:', err);
+      setError('Error fetching achievements');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'difficulty' ? parseInt(value) : value
+      [name]: value
     }));
   };
 
-  const handleSubmit = () => {
-    if (formData.achievement.trim() && formData.domain.trim()) {
-      const newAchievement = {
-        achievement: formData.achievement,
-        date: formData.date,
-        domain: formData.domain,
-        difficulty: formData.difficulty
-      };
-      setAchievements([...achievements, newAchievement]);
-      setFormData({
-        achievement: '',
-        date: currentDate,
-        domain: '',
-        difficulty: 5
+  const handleSubmit = async () => {
+    if (!formData.title.trim() || !formData.earnedAt.trim()) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      
+      const response = await fetch('http://localhost:5000/api/achievements', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userId,
+          title: formData.title.trim(),
+          earnedAt: formData.earnedAt.trim()
+        })
       });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setAchievements(data.achievements);
+        setFormData({
+          title: '',
+          earnedAt: currentDate
+        });
+      } else {
+        setError('Failed to add achievement');
+      }
+    } catch (err) {
+      console.error('Error adding achievement:', err);
+      setError('Error adding achievement');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -57,107 +109,68 @@ export default function AchievementsModal({ isOpen, onClose, achievements, setAc
           {/* Left Half: Form */}
           <div className="flex-1 flex flex-col overflow-hidden">
             <h3 className="text-lg font-semibold text-white mb-4">Add Achievement</h3>
+            {error && (
+              <div className="bg-red-600/20 border border-red-500/30 text-red-300 px-3 py-2 rounded-lg text-sm mb-4">
+                {error}
+              </div>
+            )}
             <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
               <div>
-                <label className="text-xs text-zinc-400 uppercase tracking-wider block mb-2">Achievement</label>
+                <label className="text-xs text-zinc-400 uppercase tracking-wider block mb-2">Title</label>
                 <input
                   type="text"
-                  name="achievement"
-                  value={formData.achievement}
+                  name="title"
+                  value={formData.title}
                   onChange={handleInputChange}
+                  disabled={loading}
                   placeholder="e.g., Completed Oracle Tenure"
-                  className="w-full bg-zinc-900 border border-white/10 text-white px-3 py-2 rounded-lg text-sm outline-none focus:border-indigo-500/50"
+                  className="w-full bg-zinc-900 border border-white/10 text-white px-3 py-2 rounded-lg text-sm outline-none focus:border-indigo-500/50 disabled:opacity-50"
                 />
               </div>
 
               <div>
-                <label className="text-xs text-zinc-400 uppercase tracking-wider block mb-2">Date</label>
+                <label className="text-xs text-zinc-400 uppercase tracking-wider block mb-2">Earned At (DD-MM-YY)</label>
                 <input
                   type="text"
-                  name="date"
-                  value={formData.date}
+                  name="earnedAt"
+                  value={formData.earnedAt}
                   onChange={handleInputChange}
+                  disabled={loading}
                   placeholder="DD-MM-YY"
-                  className="w-full bg-zinc-900 border border-white/10 text-white px-3 py-2 rounded-lg text-sm outline-none focus:border-indigo-500/50"
+                  className="w-full bg-zinc-900 border border-white/10 text-white px-3 py-2 rounded-lg text-sm outline-none focus:border-indigo-500/50 disabled:opacity-50"
                 />
-              </div>
-
-              <div>
-                <label className="text-xs text-zinc-400 uppercase tracking-wider block mb-2">Domain</label>
-                <input
-                  type="text"
-                  name="domain"
-                  value={formData.domain}
-                  onChange={handleInputChange}
-                  placeholder="e.g., Career, Health, Learning"
-                  className="w-full bg-zinc-900 border border-white/10 text-white px-3 py-2 rounded-lg text-sm outline-none focus:border-indigo-500/50"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-zinc-400 uppercase tracking-wider block mb-2">
-                  Difficulty: {formData.difficulty}/10
-                </label>
-                <input
-                  type="range"
-                  name="difficulty"
-                  min="1"
-                  max="10"
-                  value={formData.difficulty}
-                  onChange={handleInputChange}
-                  className="w-full accent-indigo-600"
-                />
-                <div className="flex justify-between text-xs text-zinc-500 mt-2">
-                  <span>Easy</span>
-                  <span>Hard</span>
-                </div>
               </div>
             </div>
 
             <button
               onClick={handleSubmit}
-              className="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm font-medium transition"
+              disabled={loading}
+              className="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-600/50 text-white py-2 rounded-lg text-sm font-medium transition"
             >
-              Add Achievement
+              {loading ? 'Adding...' : 'Add Achievement'}
             </button>
           </div>
 
-          {/* Right Half: Previous Achievements */}
+          {/* Right Half: Achievements List */}
           <div className="flex-1 flex flex-col overflow-hidden border-l border-white/10 pl-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Previous Achievements</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">Your Achievements</h3>
             <div className="flex-1 overflow-y-auto custom-scrollbar">
               <div className="space-y-3">
-                {achievements.length === 0 ? (
-                  <p className="text-zinc-400 text-sm text-center py-8">No achievements yet</p>
+                {loading && achievements.length === 0 ? (
+                  <p className="text-zinc-400 text-sm text-center py-8">Loading achievements...</p>
+                ) : achievements.length === 0 ? (
+                  <p className="text-zinc-400 text-sm text-center py-8">No achievements yet. Add your first one!</p>
                 ) : (
                   achievements.map((ach, idx) => (
-                    <div key={idx} className="bg-zinc-800/50 p-4 rounded-lg border border-white/10">
-                      <p className="text-white font-medium">{ach.achievement}</p>
-                      <p className="text-xs text-zinc-400 mt-1">{ach.date}</p>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="text-xs bg-indigo-600/30 text-indigo-300 px-2 py-1 rounded">
-                          {ach.domain}
-                        </span>
-                        <span className="text-xs text-yellow-400">
-                          Difficulty: {ach.difficulty}/10
-                        </span>
-                      </div>
+                    <div key={ach._id || idx} className="bg-zinc-800/50 p-4 rounded-lg border border-yellow-500/20">
+                      <p className="text-white font-medium">{ach.title}</p>
+                      <p className="text-xs text-zinc-400 mt-1">Earned: {ach.earnedAt}</p>
                     </div>
                   ))
                 )}
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex gap-3 p-6 border-t border-white/10 flex-shrink-0">
-          <button
-            onClick={onClose}
-            className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white py-2 rounded-lg text-sm font-medium transition"
-          >
-            Close
-          </button>
         </div>
       </div>
     </div>
