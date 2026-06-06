@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import WorkoutSplitModal from './WorkoutSplitModal';
 
-export default function WorkoutSplit({ workoutData, setWorkoutData, currentDate }) {
+export default function WorkoutSplit({ workoutHistory, setWorkoutHistory, currentDate, userId }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
@@ -17,9 +17,10 @@ export default function WorkoutSplit({ workoutData, setWorkoutData, currentDate 
       <WorkoutSplitModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        workoutData={workoutData}
-        setWorkoutData={setWorkoutData}
+        workoutHistory={workoutHistory}
+        setWorkoutHistory={setWorkoutHistory}
         currentDate={currentDate}
+        userId={userId}
       />
     </>
   );

@@ -49,21 +49,8 @@ export default function App() {
   // Notes Count State
   const [notesCount, setNotesCount] = useState(0);
 
-  // Workout State - will keep as is for now (not from dashboard API)
-  const [workoutData, setWorkoutData] = useState({
-    "05-05-26": {
-      "Pike Pushups": { weight: "BW", reps: "12, 10, 8" },
-      "Diamond Pushups": { weight: "BW", reps: "15, 12, 12" }
-    },
-    "04-05-26": {
-      "Bench Press": { weight: "185 lbs", reps: "8, 6, 5" },
-      "Squats": { weight: "245 lbs", reps: "10, 8, 6" }
-    },
-    "03-05-26": {
-      "Deadlifts": { weight: "315 lbs", reps: "5, 3, 2" },
-      "Rows": { weight: "185 lbs", reps: "8, 8, 8" }
-    }
-  });
+  // Workout history state from backend
+  const [workoutHistory, setWorkoutHistory] = useState([]);
 
   // Fetch dashboard data
   const fetchDashboardData = async () => {
@@ -165,9 +152,10 @@ export default function App() {
         {/* Tile 4: Workout Split */}
         <div className="overflow-hidden">
           <WorkoutSplit
-            workoutData={workoutData}
-            setWorkoutData={setWorkoutData}
+            workoutHistory={workoutHistory}
+            setWorkoutHistory={setWorkoutHistory}
             currentDate={currentDate}
+            userId={userId}
           />
         </div>
 
