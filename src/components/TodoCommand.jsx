@@ -1,40 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Trash2, Check } from 'lucide-react';
 import { formatDate } from '../utils';
 
-export default function TodoCommand({ todos, setTodos }) {
+export default function TodoCommand({ todos, setTodos, userId }) {
   const [newTask, setNewTask] = useState('');
   const [newDueDate, setNewDueDate] = useState('');
   const [showForm, setShowForm] = useState(false);
 
-  const handleAddTask = () => {
-    if (newTask.trim() && newDueDate.trim()) {
-      const updated = { ...todos };
-      updated.pending = [
-        ...updated.pending,
-        { task: newTask, dueDate: newDueDate, isCompleted: false }
-      ];
-      setTodos(updated);
-      setNewTask('');
-      setNewDueDate('');
-      setShowForm(false);
+  const fetchTodos = async () => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/todos?userId=${userId}`);
+      const data = await res.json();
+      const pending = (data.todos || []).filter(t => !t.isCompleted);
+      const completed = (data.todos || []).filter(t => t.isCompleted);
+      setTodos({ pending, completed });
+    } catch (err) {
+      console.error('Failed to fetch todos', err);
     }
   };
 
-  const handleCompleteTask = (index) => {
-    const updated = { ...todos };
-    const task = updated.pending[index];
-    updated.completed = [task, ...updated.completed];
-    updated.pending = updated.pending.filter((_, i) => i !== index);
-    console.log("hukum",updated);
-    setTodos(updated);
-    console.log("hukum",updated);
+  useEffect(() => {
+    if (userId) fetchTodos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  const handleAddTask = async () => {
+    if (!newTask.trim() || !newDueDate.trim()) return;
+    try {
+      const res = await fetch('http://localhost:5000/api/todos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, task: newTask.trim(), dueDate: newDueDate.trim() })
+      });
+      if (!res.ok) throw new Error('Failed to create todo');
+      setNewTask('');
+      setNewDueDate('');
+      setShowForm(false);
+      await fetchTodos();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleDeleteTask = (index) => {
-    const updated = { ...todos };
-    updated.pending = updated.pending.filter((_, i) => i !== index);
-    setTodos(updated);
+  const handleCompleteTask = async (todo) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/todos/${todo._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isCompleted: true })
+      });
+      if (!res.ok) throw new Error('Failed to update todo');
+      await fetchTodos();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteTask = async (todo) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/todos/${todo._id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete todo');
+      await fetchTodos();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   // Sort pending tasks by due date (ascending)
@@ -55,9 +84,9 @@ export default function TodoCommand({ todos, setTodos }) {
             Pending ({todos.pending.length})
           </p>
           <div className="space-y-2 flex-1 overflow-y-auto">
-            {sortedPending.map((task, idx) => (
+            {sortedPending.map((task) => (
               <div
-                key={idx}
+                key={task._id}
                 className="bg-zinc-900/50 p-3 rounded-lg border border-white/5 hover:border-white/10 transition"
               >
                 <p className="text-sm text-white mb-1">{task.task}</p>
@@ -66,19 +95,13 @@ export default function TodoCommand({ todos, setTodos }) {
                 </p>
                 <div className="flex gap-2 mt-2">
                   <button
-                    onClick={() => {
-                      const actualIndex = todos.pending.findIndex(t => t.task === task.task && t.dueDate === task.dueDate);
-                      handleCompleteTask(actualIndex);
-                    }}
+                    onClick={() => handleCompleteTask(task)}
                     className="flex-1 text-xs bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-500/30 text-indigo-300 py-1 rounded transition flex items-center justify-center gap-1"
                   >
                     <Check size={14} /> Done
                   </button>
                   <button
-                    onClick={() => {
-                      const actualIndex = todos.pending.findIndex(t => t.task === task.task && t.dueDate === task.dueDate);
-                      handleDeleteTask(actualIndex);
-                    }}
+                    onClick={() => handleDeleteTask(task)}
                     className="px-2 text-xs bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 text-red-300 py-1 rounded transition"
                   >
                     <Trash2 size={14} />

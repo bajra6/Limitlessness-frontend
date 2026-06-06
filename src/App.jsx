@@ -145,7 +145,7 @@ export default function App() {
 
         {/* Tile 3: To-Do Command */}
         <div className="overflow-hidden">
-          <TodoCommand todos={todos} setTodos={setTodos} />
+          <TodoCommand todos={todos} setTodos={setTodos} userId={userId} />
         </div>
 
         {/* Row 2 */}
