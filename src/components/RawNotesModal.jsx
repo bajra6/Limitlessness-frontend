@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../api';
 import { X, Plus, ArrowLeft } from 'lucide-react';
 import { formatDateTime, formatDate } from '../utils';
 
@@ -24,7 +25,7 @@ export default function RawNotesModal({ isOpen, onClose, userId }) {
     try {
       setLoading(true);
       setError('');
-      const response = await fetch(`http://localhost:5000/api/notes?userId=${userId}`);
+      const response = await fetch(`${API_BASE}/api/notes?userId=${userId}`);
       const data = await response.json();
       
       // Transform array format to object format for backward compatibility
@@ -63,7 +64,7 @@ export default function RawNotesModal({ isOpen, onClose, userId }) {
       try {
         setError('');
         const now = new Date();
-        const response = await fetch('http://localhost:5000/api/notes', {
+        const response = await fetch(`${API_BASE}/api/notes`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

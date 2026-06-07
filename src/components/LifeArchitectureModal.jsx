@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../api';
 import { X, Plus, CheckCircle2, Circle } from 'lucide-react';
 
 export default function LifeArchitectureModal({ isOpen, onClose, lifeGoals, setLifeGoals, userId }) {
@@ -38,7 +39,7 @@ export default function LifeArchitectureModal({ isOpen, onClose, lifeGoals, setL
       setError('');
       setIsLoading(true);
       try {
-        const response = await fetch(`http://localhost:5000/api/journeys?userId=${userId}`);
+        const response = await fetch(`${API_BASE}/api/journeys?userId=${userId}`);
         if (!response.ok) {
           throw new Error('Failed to fetch journeys');
         }
@@ -72,7 +73,7 @@ export default function LifeArchitectureModal({ isOpen, onClose, lifeGoals, setL
   }, [isOpen, userId]);
 
   const createJourney = async (goalName, steps) => {
-    const response = await fetch('http://localhost:5000/api/journeys', {
+    const response = await fetch(`${API_BASE}/api/journeys`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -118,7 +119,7 @@ export default function LifeArchitectureModal({ isOpen, onClose, lifeGoals, setL
   };
 
   const updateJourneyStep = async (journeyId, stepIndex, isCompleted) => {
-    const response = await fetch('http://localhost:5000/api/journeys', {
+    const response = await fetch(`${API_BASE}/api/journeys`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'

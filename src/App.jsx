@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from './api';
 import AgeMatrix from './components/AgeMatrix';
 import WorkoutSplit from './components/WorkoutSplit';
 import DailyRoutineEngine from './components/DailyRoutineEngine';
@@ -55,7 +56,7 @@ export default function App() {
   // Fetch dashboard data
   const fetchDashboardData = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/dashboard?userId=${userId}`);
+const response = await fetch(`${API_BASE}/api/dashboard?userId=${userId}`);
         const data = await response.json();
 
         // Update todos
@@ -103,7 +104,7 @@ export default function App() {
 
     const updatedCompletion = !habit.isCompleted;
     try {
-      const response = await fetch('http://localhost:5000/api/routine-logs', {
+      const response = await fetch(`${API_BASE}/api/routine-logs`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

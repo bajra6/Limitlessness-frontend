@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_BASE } from '../api';
 import { X } from 'lucide-react';
 
 const getTodayISO = () => new Date().toISOString().slice(0, 10);
@@ -23,7 +24,7 @@ export default function WorkoutSplitModal({ isOpen, onClose, workoutHistory, set
     const fetchWorkouts = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`http://localhost:5000/api/workouts?userId=${userId}`);
+        const response = await fetch(`${API_BASE}/api/workouts?userId=${userId}`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -97,7 +98,7 @@ export default function WorkoutSplitModal({ isOpen, onClose, workoutHistory, set
     setError('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/workouts', {
+      const response = await fetch(`${API_BASE}/api/workouts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

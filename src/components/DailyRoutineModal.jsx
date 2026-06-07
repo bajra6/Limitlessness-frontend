@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../api';
 import { X, Plus, Trash2, CheckCircle2, Circle } from 'lucide-react';
 
 export default function DailyRoutineModal({ isOpen, onClose, routine, userId, currentDate, refreshDashboard }) {
@@ -22,7 +23,7 @@ export default function DailyRoutineModal({ isOpen, onClose, routine, userId, cu
     if (!userId) return;
     setIsLoadingStats(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/routine-logs/stats?userId=${userId}&date=${currentDate}`);
+      const response = await fetch(`${API_BASE}/api/routine-logs/stats?userId=${userId}&date=${currentDate}`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to load stats');
       setStats(data.stats || []);
@@ -38,7 +39,7 @@ export default function DailyRoutineModal({ isOpen, onClose, routine, userId, cu
     if (!newRoutine.title.trim() || newRoutine.targetScore === '') return;
     setIsSaving(true);
     try {
-      const response = await fetch('http://localhost:5000/api/routines', {
+      const response = await fetch(`${API_BASE}/api/routines`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -63,7 +64,7 @@ export default function DailyRoutineModal({ isOpen, onClose, routine, userId, cu
     if (!routineId) return;
     setIsSaving(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/routines/${routineId}`, {
+      const response = await fetch(`${API_BASE}/api/routines/${routineId}`, {
         method: 'DELETE'
       });
       const data = await response.json();
@@ -81,7 +82,7 @@ export default function DailyRoutineModal({ isOpen, onClose, routine, userId, cu
     if (!item || !item._id) return;
     setIsSaving(true);
     try {
-      const response = await fetch('http://localhost:5000/api/routine-logs', {
+      const response = await fetch(`${API_BASE}/api/routine-logs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

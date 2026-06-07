@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../api';
 import { Trash2, Check } from 'lucide-react';
 import { formatDate } from '../utils';
 
@@ -9,7 +10,7 @@ export default function TodoCommand({ todos, setTodos, userId }) {
 
   const fetchTodos = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/todos?userId=${userId}`);
+      const res = await fetch(`${API_BASE}/api/todos?userId=${userId}`);
       const data = await res.json();
       const pending = (data.todos || []).filter(t => !t.isCompleted);
       const completed = (data.todos || []).filter(t => t.isCompleted);
@@ -27,7 +28,7 @@ export default function TodoCommand({ todos, setTodos, userId }) {
   const handleAddTask = async () => {
     if (!newTask.trim() || !newDueDate.trim()) return;
     try {
-      const res = await fetch('http://localhost:5000/api/todos', {
+      const res = await fetch(`${API_BASE}/api/todos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, task: newTask.trim(), dueDate: newDueDate.trim() })
@@ -44,7 +45,7 @@ export default function TodoCommand({ todos, setTodos, userId }) {
 
   const handleCompleteTask = async (todo) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/todos/${todo._id}`, {
+      const res = await fetch(`${API_BASE}/api/todos/${todo._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isCompleted: true })
@@ -58,7 +59,7 @@ export default function TodoCommand({ todos, setTodos, userId }) {
 
   const handleDeleteTask = async (todo) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/todos/${todo._id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/api/todos/${todo._id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete todo');
       await fetchTodos();
     } catch (err) {
