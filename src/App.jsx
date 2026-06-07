@@ -11,9 +11,11 @@ import RawNotes from './components/RawNotes';
 import RawNotesModal from './components/RawNotesModal';
 import DailyRoutineModal from './components/DailyRoutineModal';
 import LifeArchitectureModal from './components/LifeArchitectureModal';
+import UserIdPromptModal from './components/UserIdPromptModal';
 
 export default function App() {
-  const userId = 'testuser123'; // In production, get from auth context
+  const [userId, setUserId] = useState(null);
+  const [showUserIdPrompt, setShowUserIdPrompt] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState('');
 
@@ -127,18 +129,47 @@ const response = await fetch(`${API_BASE}/api/dashboard?userId=${userId}`);
     }
   };
 
-  // Fetch dashboard data on mount
+  // Initialize userId from localStorage and setup date
   useEffect(() => {
     // Get today's date in DD-MM-YY format
     const today = new Date();
     const todayStr = `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getFullYear()).slice(-2)}`;
     setCurrentDate(todayStr);
 
-    fetchDashboardData();
+    // Check localStorage for userId
+    const storedUserId = localStorage.getItem('userId');
+    console.log("tadaaa", storedUserId);
+    if (storedUserId) {
+      setUserId(storedUserId);
+      setLoading(true);
+    } else {
+      setShowUserIdPrompt(true);
+      setLoading(false);
+    }
+  }, []);
+
+  // Handle userId prompt submission
+  const handleUserIdSubmit = (newUserId) => {
+    localStorage.setItem('userId', newUserId);
+    setUserId(newUserId);
+    setShowUserIdPrompt(false);
+    setLoading(true);
+  };
+
+  // Fetch dashboard data when userId is set
+  useEffect(() => {
+    if (userId) {
+      fetchDashboardData();
+    }
   }, [userId]);
 
   return (
     <div className="h-screen w-full bg-gradient-to-br from-zinc-950 via-slate-900 to-zinc-950 p-6 flex flex-col overflow-hidden">
+      <UserIdPromptModal
+        isOpen={showUserIdPrompt}
+        onSubmit={handleUserIdSubmit}
+      />
+
       {loading && (
         <div className="flex items-center justify-center h-full">
           <p className="text-white">Loading dashboard...</p>
