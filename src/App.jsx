@@ -12,10 +12,13 @@ import RawNotesModal from './components/RawNotesModal';
 import DailyRoutineModal from './components/DailyRoutineModal';
 import LifeArchitectureModal from './components/LifeArchitectureModal';
 import UserIdPromptModal from './components/UserIdPromptModal';
+import UserDetailsModal from './components/UserDetailsModal';
 
 export default function App() {
   const [userId, setUserId] = useState(null);
   const [showUserIdPrompt, setShowUserIdPrompt] = useState(false);
+  const [showUserDetailsPrompt, setShowUserDetailsPrompt] = useState(false);
+  const [initialUserId, setInitialUserId] = useState('');
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState('');
 
@@ -29,7 +32,7 @@ export default function App() {
   const [totalScore, setTotalScore] = useState(0);
 
   // User Birthdate (for Age Matrix)
-  const [birthDate, setBirthDate] = useState('2000-00-00T00:00:00'); 
+  const [birthDate, setBirthDate] = useState('2000-00-00T00:00:00');
 
   // Routine State - list of routines from backend
   const [routine, setRoutine] = useState([]);
@@ -129,6 +132,25 @@ const response = await fetch(`${API_BASE}/api/dashboard?userId=${userId}`);
     }
   };
 
+  const checkUserExists = async (userIdToCheck) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/users/check?userId=${userIdToCheck}`);
+      const data = await response.json();
+      if (data.exists) {
+        setUserId(userIdToCheck);
+        setLoading(true);
+      } else {
+        setInitialUserId(userIdToCheck);
+        setShowUserDetailsPrompt(true);
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error('Failed to check user:', err);
+      setUserId(userIdToCheck);
+      setLoading(true);
+    }
+  };
+
   // Initialize userId from localStorage and setup date
   useEffect(() => {
     // Get today's date in DD-MM-YY format
@@ -138,21 +160,36 @@ const response = await fetch(`${API_BASE}/api/dashboard?userId=${userId}`);
 
     // Check localStorage for userId
     const storedUserId = localStorage.getItem('userId');
-    console.log("tadaaa", storedUserId);
     if (storedUserId) {
-      setUserId(storedUserId);
-      setLoading(true);
+      checkUserExists(storedUserId);
     } else {
       setShowUserIdPrompt(true);
       setLoading(false);
     }
   }, []);
 
-  // Handle userId prompt submission
+  // Handle first prompt: userId only
   const handleUserIdSubmit = (newUserId) => {
     localStorage.setItem('userId', newUserId);
-    setUserId(newUserId);
     setShowUserIdPrompt(false);
+    setLoading(true);
+    checkUserExists(newUserId);
+  };
+
+  // Handle second prompt: email + dob
+  const handleUserDetailsSubmit = async ({ email, dob }) => {
+    try {
+      await fetch(`${API_BASE}/api/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: initialUserId, email, dob })
+      });
+    } catch (err) {
+      console.error('Failed to create user:', err);
+    }
+
+    setShowUserDetailsPrompt(false);
+    setUserId(initialUserId);
     setLoading(true);
   };
 
@@ -168,6 +205,12 @@ const response = await fetch(`${API_BASE}/api/dashboard?userId=${userId}`);
       <UserIdPromptModal
         isOpen={showUserIdPrompt}
         onSubmit={handleUserIdSubmit}
+      />
+
+      <UserDetailsModal
+        isOpen={showUserDetailsPrompt}
+        userId={initialUserId}
+        onSubmit={handleUserDetailsSubmit}
       />
 
       {loading && (
