@@ -82,7 +82,7 @@ const response = await fetch(`${API_BASE}/api/dashboard?userId=${userId}`);
 
         // Update journeys/life goals - transform from backend format
         const goalsMap = {};
-        data.journeys.forEach((journey, idx) => {
+        (data.journeys || []).filter(journey => !journey.archivedAt && journey.progress < 100).forEach(journey => {
           goalsMap[journey._id] = {
             goalName: journey.goalName,
             progress: journey.progress,
@@ -323,7 +323,10 @@ const response = await fetch(`${API_BASE}/api/dashboard?userId=${userId}`);
       />
       <LifeArchitectureModal
         isOpen={isLifeArchitectureModalOpen}
-        onClose={() => setIsLifeArchitectureModalOpen(false)}
+        onClose={() => {
+          setIsLifeArchitectureModalOpen(false);
+          fetchDashboardData();
+        }}
         lifeGoals={lifeGoals}
         setLifeGoals={setLifeGoals}
         userId={userId}
